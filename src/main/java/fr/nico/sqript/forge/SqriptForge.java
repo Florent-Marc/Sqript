@@ -52,7 +52,7 @@ public class SqriptForge {
 
     public static File scriptDir;
 
-    public static ArrayList<ScriptBlock> blocks = new ArrayList<>();
+    public static ArrayList<net.minecraft.block.Block> blocks = new ArrayList<>();
 
     public static ArrayList<SoundEvent> soundEvents = new ArrayList<>();
     public static ArrayList<ScriptItem> scriptItems = new ArrayList<>();
@@ -335,7 +335,7 @@ public class SqriptForge {
                 ModelLoader.setCustomModelResourceLocation(e.getItem(), 0, new ModelResourceLocation(
                         e.customModel, "inventory"));
         }
-        for (ScriptBlock e : blocks) {
+        for (net.minecraft.block.Block e : blocks) {
             ModelLoader.setCustomStateMapper(e, new DefaultStateMapper());
         }
         for (Item e : items) {

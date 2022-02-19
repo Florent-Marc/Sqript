@@ -293,7 +293,23 @@ public class EvtPlayer {
         }
 
     }
+    @Cancelable
+    @Event(
+            feature = @Feature(name = "Player disconnect",
+                    description = "Called when a player logs in.",
+                    examples = "on player disconnect:",
+                    pattern = "[player] (logout|disconnect)"),
+            accessors = {
+                    @Feature(name = "Player",description = "The player that logged out.", pattern = "player", type = "player"),
+            }
+    )
+    public static class EvtOnPlayerLogout extends ScriptEvent {
 
+        public EvtOnPlayerLogout(EntityPlayer player) {
+            super(new ScriptTypeAccessor(new TypePlayer(player),"player"));
+        }
+
+    }
     @Cancelable
     @Event(
             feature = @Feature(name = "Entity interact",

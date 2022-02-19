@@ -17,7 +17,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 
-
 @Block(
         feature = @Feature(name = "Block",
                 description = "Define a Minecraft block that will be added to the game.",
@@ -31,11 +30,13 @@ import java.io.FileWriter;
                 @Feature(name = "creative tab"),
                 @Feature(name = "harvest level"),
                 @Feature(name = "drop"),
-                @Feature(name = "hardness")
+                @Feature(name = "variants"),
+                @Feature(name = "hardness"),
         },
         reloadable = false
 )
 public class ScriptBlockBlock extends ScriptBlock {
+    String variant = null;
 
 
     public ScriptBlockBlock(ScriptToken head) throws ScriptException {
@@ -52,6 +53,7 @@ public class ScriptBlockBlock extends ScriptBlock {
         int harvestLevel = 1;
         float hardness = 6f;
         Material material = Material.ROCK;
+        net.minecraft.block.Block e;
 
         if(!fieldDefined("name"))
             throw new ScriptException.ScriptMissingFieldException(this.getLine(),"item","name");
@@ -70,7 +72,12 @@ public class ScriptBlockBlock extends ScriptBlock {
             drop = getSubBlock("drop").getRawContent();
         if(fieldDefined("hardness"))
             hardness = Float.parseFloat(getSubBlock("hardness").getRawContent());
-            //System.out.println("ITEM TYPE FIELD IS NOT DEFINED");
+        if(fieldDefined("variants")) {
+            variant = getSubBlock("variants").getRawContent();
+        }
+
+        //System.out.println("tgggggggggggggggggggggggggggggggggggggg");
+        //System.out.println("ITEM TYPE FIELD IS NOT DEFINED");
         fr.nico.sqript.forge.common.ScriptBlock.ScriptBlock block = new fr.nico.sqript.forge.common.ScriptBlock.ScriptBlock(material,drop,harvestLevel);
         block.setRegistryName(this.getHead().getScriptInstance().getName(),registryName);
         texture = this.getHead().getScriptInstance().getName()+":"+texture;
@@ -78,12 +85,12 @@ public class ScriptBlockBlock extends ScriptBlock {
         block.setHardness(hardness);
         block.setCreativeTab(tab);
 
-        //System.out.println("Max stack size of item is : "+maxStackSize);
         SqriptForge.blocks.add(block);
 
         createBlock(registryName, texture);
         createBlockState(registryName,texture);
         createItemBlockModel(registryName,texture);
+
 
         Item itemBlock = new ItemBlock(block){
             @Override
@@ -92,7 +99,32 @@ public class ScriptBlockBlock extends ScriptBlock {
             }
         }.setUnlocalizedName(block.getUnlocalizedName()).setRegistryName(block.getRegistryName());
         SqriptForge.items.add(itemBlock);
+        if(registryName.equalsIgnoreCase("granite_1")) {
+            variant = "stair";
+        }
+        if(variant !=null) {
+            if (variant.contains("stair")) {
+                e = new fr.nico.sqript.forge.common.ScriptBlock.ScriptBlockStair(block.getDefaultState(), material);
+                e.setRegistryName(this.getHead().getScriptInstance().getName(), registryName + "_stair");
+                texture = this.getHead().getScriptInstance().getName() + ":" + texture;
+                e.setHardness(hardness);
+                e.setCreativeTab(tab);
 
+                //System.out.println("Max stack size of item is : "+maxStackSize);
+                SqriptForge.blocks.add(e);
+
+                createBlock(registryName , texture);
+                createBlockState(registryName + "_stair", texture);
+                createItemBlockModel(registryName + "_stair", texture);
+                Item tt = new ItemBlock(e) {
+                    @Override
+                    public String getItemStackDisplayName(ItemStack stack) {
+                        return displayName + " Stair";
+                    }
+                }.setUnlocalizedName(e.getUnlocalizedName() + "_stair").setRegistryName(e.getRegistryName());
+                SqriptForge.items.add(tt);
+            }
+        }
 
     }
 
@@ -109,15 +141,29 @@ public class ScriptBlockBlock extends ScriptBlock {
             if(!itemModelsFolder.exists())
                 itemModelsFolder.mkdirs();
             //Il faut créer le dossier et l'enregistrer à la main
-            String parent = "minecraft:block/cube_all";
-            File jsonFile = new File(itemModelsFolder,registryName+".json");
-            String content = ("{"+"\n"
-                    +"  'parent': '"+parent+"',"+"\n"
-                    +"  'textures': {"+"\n"
-                    +"      'all': '"+texture+"'"+"\n"
-                    +"  }"+"\n"
-                    +"}").replaceAll("'","\"");
-            createFile(jsonFile,content);
+            if(variant==null) {
+                String parent = "minecraft:block/cube_all";
+                File jsonFile = new File(itemModelsFolder, registryName + ".json");
+                String content = ("{" + "\n"
+                        + "  'parent': '" + parent + "'," + "\n"
+                        + "  'textures': {" + "\n"
+                        + "      'all': '" + texture + "'" + "\n"
+                        + "  }" + "\n"
+                        + "}").replaceAll("'", "\"");
+                createFile(jsonFile, content);
+            } else{
+                String parent = "minecraft:block/stairs";
+                File jsonFile = new File(itemModelsFolder, registryName + ".json");
+                String content = ("{" + "\n"
+                        + "  'parent': '" + parent + "'," + "\n"
+                        + "  'textures': {" + "\n"
+                        + "      'bottom': '" +this.getHead().getScriptInstance().getName()+":"+registryName+ "'," + "\n"
+                        + "      'top': '" +this.getHead().getScriptInstance().getName()+":"+registryName+ "'," + "\n"
+                        + "      'side': '" +this.getHead().getScriptInstance().getName()+":"+registryName+ "'" + "\n"
+                        + "  }" + "\n"
+                        + "}").replaceAll("'", "\"");
+                createFile(jsonFile, content);
+            }
         }
     }
 
@@ -139,10 +185,50 @@ public class ScriptBlockBlock extends ScriptBlock {
                     +"    \"variants\": {\n"
                     +"        \"normal\": [\n"
                     +"            { \"model\": \""+this.getHead().getScriptInstance().getName()+":"+registryName+"\" }\n"
-                    +"        ]\n"
+                    +"        ],\n"
+                    +"        \"facing=east,half=bottom,shape=straight\":  { \"model\": \""+registryName+"\" },\n"
+                    +"        \"facing=west,half=bottom,shape=straight\":  { \"model\": \""+registryName+"\", \"y\": 180, \"uvlock\": true },\n"
+                    +"        \"facing=south,half=bottom,shape=straight\": { \"model\": \""+registryName+"\", \"y\": 90, \"uvlock\": true },\n"
+                    +"        \"facing=north,half=bottom,shape=straight\": { \"model\": \""+registryName+"\", \"y\": 270, \"uvlock\": true },\n"
+                    +"        \"facing=east,half=bottom,shape=outer_right\":  { \"model\": \""+registryName+"\" },\n"
+                    +"        \"facing=west,half=bottom,shape=outer_right\":  { \"model\": \""+registryName+"\", \"y\": 180, \"uvlock\": true },\n"
+                    +"        \"facing=south,half=bottom,shape=outer_right\": { \"model\": \""+registryName+"\", \"y\": 90, \"uvlock\": true },\n"
+                    +"        \"facing=north,half=bottom,shape=outer_right\": { \"model\": \""+registryName+"\", \"y\": 270, \"uvlock\": true },\n"
+                    +"        \"facing=east,half=bottom,shape=outer_left\":  { \"model\": \""+registryName+"\", \"y\": 270, \"uvlock\": true },\n"
+                    +"        \"facing=west,half=bottom,shape=outer_left\":  { \"model\": \""+registryName+"\", \"y\": 90, \"uvlock\": true },\n"
+                    +"        \"facing=south,half=bottom,shape=outer_left\": { \"model\": \""+registryName+"\" },\n"
+                    +"        \"facing=north,half=bottom,shape=outer_left\": { \"model\": \""+registryName+"\", \"y\": 180, \"uvlock\": true },\n"
+                    +"        \"facing=east,half=bottom,shape=inner_right\":  { \"model\": \""+registryName+"\" },\n"
+                    +"        \"facing=west,half=bottom,shape=inner_right\":  { \"model\": \""+registryName+"\", \"y\": 180, \"uvlock\": true },\n"
+                    +"        \"facing=south,half=bottom,shape=inner_right\": { \"model\": \""+registryName+"\", \"y\": 90, \"uvlock\": true },\n"
+                    +"        \"facing=north,half=bottom,shape=inner_right\": { \"model\": \""+registryName+"\", \"y\": 270, \"uvlock\": true },\n"
+                    +"        \"facing=east,half=bottom,shape=inner_left\":  { \"model\": \""+registryName+"\", \"y\": 270, \"uvlock\": true },\n"
+                    +"        \"facing=west,half=bottom,shape=inner_left\":  { \"model\": \""+registryName+"\", \"y\": 90, \"uvlock\": true },\n"
+                    +"        \"facing=south,half=bottom,shape=inner_left\": { \"model\": \""+registryName+"\" },\n"
+                    +"        \"facing=north,half=bottom,shape=inner_left\": { \"model\": \""+registryName+"\", \"y\": 180, \"uvlock\": true },\n"
+                    +"        \"facing=east,half=top,shape=straight\":  { \"model\": \""+registryName+"\", \"x\": 180, \"uvlock\": true },\n"
+                    +"        \"facing=west,half=top,shape=straight\":  { \"model\": \""+registryName+"\", \"x\": 180, \"y\": 180, \"uvlock\": true },\n"
+                    +"        \"facing=south,half=top,shape=straight\": { \"model\": \""+registryName+"\", \"x\": 180, \"y\": 90, \"uvlock\": true },\n"
+                    +"        \"facing=north,half=top,shape=straight\": { \"model\": \""+registryName+"\", \"x\": 180, \"y\": 270, \"uvlock\": true },\n"
+                    +"        \"facing=east,half=top,shape=outer_right\":  { \"model\": \""+registryName+"\", \"x\": 180, \"y\": 90, \"uvlock\": true },\n"
+                    +"        \"facing=west,half=top,shape=outer_right\":  { \"model\": \""+registryName+"\", \"x\": 180, \"y\": 270, \"uvlock\": true },\n"
+                    +"        \"facing=south,half=top,shape=outer_right\": { \"model\": \""+registryName+"\", \"x\": 180, \"y\": 180, \"uvlock\": true },\n"
+                    +"        \"facing=north,half=top,shape=outer_right\": { \"model\": \""+registryName+"\", \"x\": 180, \"uvlock\": true },\n"
+                    +"        \"facing=east,half=top,shape=outer_left\":  { \"model\": \""+registryName+"\", \"x\": 180, \"uvlock\": true },\n"
+                    +"        \"facing=west,half=top,shape=outer_left\":  { \"model\": \""+registryName+"\", \"x\": 180, \"y\": 180, \"uvlock\": true },\n"
+                    +"        \"facing=south,half=top,shape=outer_left\": { \"model\": \""+registryName+"\", \"x\": 180, \"y\": 90, \"uvlock\": true },\n"
+                    +"        \"facing=north,half=top,shape=outer_left\": { \"model\": \""+registryName+"\", \"x\": 180, \"y\": 270, \"uvlock\": true },\n"
+                    +"        \"facing=east,half=top,shape=inner_right\":  { \"model\": \""+registryName+"\", \"x\": 180, \"y\": 90, \"uvlock\": true },\n"
+                    +"        \"facing=west,half=top,shape=inner_right\":  { \"model\": \""+registryName+"\", \"x\": 180, \"y\": 270, \"uvlock\": true },\n"
+                    +"        \"facing=south,half=top,shape=inner_right\": { \"model\": \""+registryName+"\", \"x\": 180, \"y\": 180, \"uvlock\": true },\n"
+                    +"        \"facing=north,half=top,shape=inner_right\": { \"model\": \""+registryName+"\", \"x\": 180, \"uvlock\": true },\n"
+                    +"        \"facing=east,half=top,shape=inner_left\":  { \"model\": \""+registryName+"\", \"x\": 180, \"uvlock\": true },\n"
+                    +"        \"facing=west,half=top,shape=inner_left\":  { \"model\": \""+registryName+"\", \"x\": 180, \"y\": 180, \"uvlock\": true },\n"
+                    +"        \"facing=south,half=top,shape=inner_left\": { \"model\": \""+registryName+"\", \"x\": 180, \"y\": 90, \"uvlock\": true },\n"
+                    +"        \"facing=north,half=top,shape=inner_left\": { \"model\": \""+registryName+"\", \"x\": 180, \"y\": 270, \"uvlock\": true }\n"
                     +"    }\n"
                     +"}"
-                    ).replaceAll("'","\"");
+            ).replaceAll("'","\"");
             createFile(jsonFile,content);
         }
     }
@@ -196,3 +282,10 @@ public class ScriptBlockBlock extends ScriptBlock {
 
 
 }
+
+
+
+
+
+
+

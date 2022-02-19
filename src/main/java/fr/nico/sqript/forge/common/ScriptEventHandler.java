@@ -264,6 +264,13 @@ public class ScriptEventHandler {
             ((EntityPlayerMP) event.player).connection.disconnect(new TextComponentString("Disconnected."));
         }
     }
+    @SubscribeEvent
+    @SideOnly(Side.SERVER)
+    public void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (ScriptManager.callEvent(new EvtPlayer.EvtOnPlayerLogout(event.player))) {
+            ((EntityPlayerMP) event.player).connection.disconnect(new TextComponentString("Disconnected."));
+        }
+    }
 
     @SubscribeEvent
     public void onPlayerHit(LivingAttackEvent event) {
